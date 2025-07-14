@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Onkyo SCAM",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "Manage multiple SoundCloud accounts with session tracking (special for Onkyo)",
   "permissions": [
     "cookies",
