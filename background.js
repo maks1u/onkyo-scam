@@ -79,58 +79,6 @@ browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         }
 
-        case 'removeAccount': {
-          try {
-            const {account, index} = request;
-
-            if (!account) {
-              return sendResponse({
-                success: false,
-                error: 'Invalid account data'
-              });
-            }
-
-            const result = await browserAPI.storage.local.get('soundcloudAccounts');
-            const accounts = result.soundcloudAccounts || [];
-
-            if (index >= 0 && index < accounts.length) {
-              accounts.splice(index, 1);
-
-              await browserAPI.storage.local.set({soundcloudAccounts: accounts});
-
-              // Get current cookies
-              const cookies = await browserAPI.cookies.getAll({
-                url: 'https://api-auth.soundcloud.com'
-              });
-
-              const sessionCookie = cookies.find(cookie => cookie.name === '_soundcloud_session');
-
-              // Check if the removed account is the active one
-              if (sessionCookie && account.cookie && account.cookie.value === sessionCookie.value) {
-                await removeAllCookies();
-              }
-
-              console.log('Account removed successfully:', account.username);
-              return sendResponse({
-                success: true,
-                message: `Removed account: ${account.username}`
-              });
-            } else {
-              return sendResponse({
-                success: false,
-                error: 'Invalid account index'
-              });
-            }
-
-          } catch (error) {
-            console.error('Error removing account:', error);
-            return sendResponse({
-              success: false,
-              error: error.message
-            });
-          }
-        }
-
         case 'getActiveAccount': {
           try {
             // Get current cookies

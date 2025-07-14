@@ -7,19 +7,7 @@ browserAPI.storage.onChanged.addListener((changes, area) => {
 });
 
 async function updateAccountList() {
-  const { soundcloudAccounts = [] } = await browserAPI.storage.local.get('soundcloudAccounts');
-
-  // Get active account by comparing cookies
-  const activeAccountResponse = await new Promise(resolve => {
-    browserAPI.runtime.sendMessage({
-      method: 'getActiveAccount'
-    }, response => {
-      resolve(response);
-    });
-  });
-
-  const activeAccount = activeAccountResponse && activeAccountResponse.success ? 
-    activeAccountResponse.activeAccount : null;
+  const {soundcloudAccounts = []} = await browserAPI.storage.local.get('soundcloudAccounts');
 
   const listContainer = document.getElementById('account-list');
   const emptyState = document.getElementById('empty-state');
@@ -153,36 +141,20 @@ async function removeAccount(account, index) {
       return;
     }
 
-    // Send message to background script
-    browserAPI.runtime.sendMessage({
-      method: 'removeAccount',
-      account: account,
-      index: index
-    }, async (response) => {
-      if (response && response.success) {
-        // Remove from local storage
-        const { soundcloudAccounts = [] } = await browserAPI.storage.local.get('soundcloudAccounts');
+    const {soundcloudAccounts = []} = await browserAPI.storage.local.get('soundcloudAccounts');
 
-        // Get active account by comparing cookies
-        const activeAccountResponse = await new Promise(resolve => {
-          browserAPI.runtime.sendMessage({
-            method: 'getActiveAccount'
-          }, response => {
-            resolve(response);
-          });
-        });
+    if (account.isActive) {
+      browserAPI.runtime.sendMessage({
+        method: 'clearCurrentCookies'
+      }, (response) => {
+        if (response && response.success) {
+          browserAPI.tabs.create({url: 'https://soundcloud.com/signin'});
+        }
+      });
+    }
 
-        const activeAccount = activeAccountResponse && activeAccountResponse.success ? 
-          activeAccountResponse.activeAccount : null;
-
-        const updatedAccounts = soundcloudAccounts.filter((_, i) => i !== index);
-        await browserAPI.storage.local.set({ soundcloudAccounts: updatedAccounts });
-
-        console.log('Account removed successfully:', account.username);
-      } else {
-        console.error('Failed to remove account:', response?.error || 'Unknown error');
-      }
-    });
+    const updatedAccounts = soundcloudAccounts.filter((acc, i) => account.cookie.value !== acc.cookie.value);
+    await browserAPI.storage.local.set({soundcloudAccounts: updatedAccounts});
   } catch (error) {
     console.error('Error removing account:', error);
   }
@@ -198,7 +170,7 @@ async function addAccount() {
         console.log('All cookies cleared successfully');
 
         // Open SoundCloud signin page in a new tab
-        browserAPI.tabs.create({ url: 'https://soundcloud.com/signin' });
+        browserAPI.tabs.create({url: 'https://soundcloud.com/signin'});
       } else {
         console.error('Failed to clear cookies:', response?.error || 'Unknown error');
       }
@@ -218,3 +190,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize the account list when the script loads
 updateAccountList();
+
+
+function findCurrentUsername() {
+  // Try multiple selectors to find the avatar span
+  const selectors = [
+    'span[aria-label*="avatar"]',
+    '.header__userNavAvatar span',
+    'span.sc-artwork[aria-label*="avatar"]',
+    'span[style*="background-image"]',
+    '.sc-artwork.image__rounded[aria-label*="avatar"]'
+  ];
+
+  let avatarSpan = null;
+
+  for (const selector of selectors) {
+    avatarSpan = document.querySelector(selector);
+    if (avatarSpan) {
+      break;
+    }
+  }
+
+  if (!avatarSpan) {
+    const allSpans = document.querySelectorAll('span');
+    for (const span of allSpans) {
+      if (span.style.backgroundImage && span.getAttribute('aria-label')?.includes('avatar')) {
+        avatarSpan = span;
+        console.log('Found avatar span by checking all spans');
+        break;
+      }
+    }
+  }
+
+  if (!avatarSpan) {
+    console.log('Avatar span not found');
+    console.log('Available spans:', document.querySelectorAll('span').length);
+
+    // Log some debug info
+    const headerNav = document.querySelector('.header__userNavAvatar');
+    if (headerNav) {
+      console.log('Header nav found:', headerNav.innerHTML);
+    }
+
+    return null;
+  }
+
+  const ariaLabel = avatarSpan.getAttribute('aria-label');
+  return ariaLabel ? ariaLabel.replace("’s avatar", "") : null;
+}

@@ -7,20 +7,30 @@ if (document.readyState === 'loading') {
 }
 
 async function init() {
-  // const accounts = localStorage.getItem('soundcloudAccounts') ? JSON.parse(localStorage.getItem('soundcloudAccounts')) : [];
-  const accounts = await browserAPI.storage.local.get('soundcloudAccounts').then(result => result.soundcloudAccounts || []);
+  let accounts = await browserAPI.storage.local.get('soundcloudAccounts').then(result => result.soundcloudAccounts || []);
 
   const currentAccount = await getCurrentAccount();
-  if (!accounts.some(account => account.username === currentAccount.username)) {
-    accounts.push(currentAccount);
+  let found = accounts.some(account => account.username === currentAccount.username);
 
-    // localStorage.setItem('soundcloudAccounts', JSON.stringify(accounts));
-    await browserAPI.storage.local.set({
-      soundcloudAccounts: accounts
-    }, () => {
-      console.log('SoundCloud accounts updated:', accounts);
-    })
+  if (found) {
+    accounts = accounts.map(account =>
+      account.username === currentAccount.username
+        ? {...account, isActive: true}
+        : {...account, isActive: false}
+    );
+  } else {
+    accounts = accounts.map(account => ({...account, isActive: false}));
+    accounts.push({
+      ...currentAccount,
+      isActive: true
+    });
   }
+
+  await browserAPI.storage.local.set({
+    soundcloudAccounts: accounts
+  }, () => {
+    console.log('SoundCloud accounts updated:', accounts);
+  });
 }
 
 function getCurrentAccount() {

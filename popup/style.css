@@ -1,19 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap');
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: "TikTok Sans", sans-serif;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: black;
+    color: white;
     min-height: 100vh;
-    min-width: 100vh;
-    color: #333;
+    min-width: 350px;
 }
 
 .container {
-    max-width: 400px;
+    max-width: 350px;
     margin: 0 auto;
     padding: 20px;
     min-height: 100vh;
@@ -22,19 +25,19 @@ body {
 }
 
 .header {
-    background: rgba(255, 255, 255, 0.95);
+    /*background: #303030;*/
+    border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
-    border-radius: 16px;
+    border-radius: 4px;
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .header h1 {
     font-size: 24px;
     font-weight: 700;
-    color: #2c3e50;
+    color: white;
     margin-bottom: 8px;
 }
 
@@ -46,15 +49,15 @@ body {
 
 .account-count {
     font-size: 14px;
-    color: #7f8c8d;
+    color: #666;
     font-weight: 500;
 }
 
 .add-account-btn {
-    background: #3498db;
+    background: #f50;
     color: white;
-    border: none;
-    border-radius: 8px;
+    border: 1px solid rgba(255, 85, 0, 0);
+    border-radius: 2px;
     padding: 8px 12px;
     font-size: 14px;
     font-weight: 600;
@@ -63,8 +66,9 @@ body {
 }
 
 .add-account-btn:hover {
-    background: #2980b9;
-    transform: scale(1.05);
+    background: rgba(255, 85, 0, 0);
+    color: #f50;
+    border: 1px solid #f50;
 }
 
 .account-list {
@@ -76,20 +80,19 @@ body {
 
 .account-item {
     position: relative;
-    background: rgba(255, 255, 255, 0.95);
+    /*background: #303030;*/
+    border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
-    border-radius: 12px;
+    border-radius: 4px;
     padding: 16px;
     display: flex;
     align-items: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .account-item:hover {
-    transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
@@ -99,7 +102,6 @@ body {
     border-radius: 50%;
     margin-right: 12px;
     object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
 }
 
@@ -114,34 +116,26 @@ body {
 .account-username {
     font-size: 16px;
     font-weight: 600;
-    color: #2c3e50;
+    color: white;
     margin-bottom: 2px;
-}
-
-.account-status {
-    font-size: 12px;
-    color: #7f8c8d;
-    font-weight: 500;
 }
 
 .account-actions {
     display: flex;
     gap: 8px;
     opacity: 0;
-    transform: translateX(10px);
     transition: all 0.3s ease;
 }
 
 .account-item:hover .account-actions {
     opacity: 1;
-    transform: translateX(0);
 }
 
 .action-btn {
     width: 36px;
     height: 36px;
     border: none;
-    border-radius: 8px;
+    border-radius: 3px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -192,7 +186,7 @@ body {
 .empty-state {
     display: none;
     text-align: center;
-    padding: 40px 20px;
+    padding: 40px 10px;
     color: rgba(255, 255, 255, 0.8);
 }
 
@@ -200,23 +194,22 @@ body {
     display: block;
 }
 
-.empty-icon {
-    font-size: 48px;
+.sc-logo {
     margin-bottom: 16px;
 }
 
 .empty-state p {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 8px;
 }
 
 .empty-state small {
     font-size: 14px;
+    font-weight: 100;
     opacity: 0.7;
 }
 
-/* Loading animation */
 @keyframes pulse {
     0% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -227,7 +220,6 @@ body {
     animation: pulse 1.5s ease-in-out infinite;
 }
 
-/* Smooth transitions for dynamic content */
 .account-item {
     animation: slideIn 0.3s ease-out;
 }
@@ -243,28 +235,31 @@ body {
     }
 }
 
-/* Responsive design */
-@media (max-width: 480px) {
-    .container {
-        padding: 16px;
-    }
+.footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: pulseMessage 1.5s ease-in-out infinite;
+}
 
-    .header {
-        padding: 16px;
-    }
+.footer-logo {
+    border-radius: 50%;
+}
 
-    .account-item {
-        padding: 12px;
-    }
+.discord-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
 
-    .account-avatar {
-        width: 40px;
-        height: 40px;
-    }
+    color: #666666;
+    text-decoration: underline;
+    font-size: 14px;
+    font-weight: 400;
+}
 
-    .action-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 12px;
-    }
+@keyframes pulseMessage {
+    0% { opacity: 1; }
+    50% { opacity: 0.85; }
+    100% { opacity: 1; }
 }

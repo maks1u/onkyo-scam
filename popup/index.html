@@ -6,23 +6,32 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>SoundCloud Accounts</h1>
-            <div class="header-actions">
-                <div class="account-count" id="account-count">0 accounts</div>
-                <button id="add-account-btn" class="add-account-btn">Add account</button>
-            </div>
-        </header>
-        <div class="account-list" id="account-list">
-            <!-- Accounts will be populated here -->
+<div class="container">
+    <header class="header">
+        <h1>SoundCloud Accounts</h1>
+        <div class="header-actions">
+            <div class="account-count" id="account-count">0 accounts</div>
+            <button id="add-account-btn" class="add-account-btn">Add account</button>
         </div>
-        <div class="empty-state" id="empty-state">
-            <div class="empty-icon">🎵</div>
-            <p>No SoundCloud accounts found</p>
-            <small>Visit SoundCloud to add accounts</small>
-        </div>
+    </header>
+    <div class="account-list" id="account-list">
+        <!-- Accounts will be populated here -->
     </div>
-    <script type="module" src="script.js"></script>
+    <div class="empty-state" id="empty-state">
+        <svg class="sc-logo" width="92" height="39" viewBox="0 0 92 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M44.167 4.95833V38.8333H80.667C88.3753 38.2917 91.8337 33.5417 91.8337 27.7083C91.8337 21.5417 87.167 16.5833 80.917 16.5833C79.3337 16.5833 78.0003 16.9167 76.6253 17.5C75.6253 7.75 67.3337 0.125 57.1253 0.125C52.2503 0.125 47.6253 1.95833 44.167 4.95833ZM40.5003 9.20833C39.2503 8.45833 37.917 7.875 36.4587 7.58333V38.8333H42.2503V6.91667C41.6253 7.58333 41.042 8.41667 40.5003 9.20833ZM30.7087 6.95833V38.8333H34.542V7.08333C33.7503 6.95833 32.9587 6.91667 32.1253 6.91667C31.6253 6.91667 31.167 6.91667 30.7087 6.95833ZM23.0837 9.66667V38.8333H26.8753V7.75C25.5003 8.20833 24.2087 8.875 23.0837 9.66667ZM16.1253 20.0833C15.8753 20.0833 15.6253 19.8333 15.3337 19.7083V38.8333H19.167V13.25C17.6253 15.25 16.5837 17.625 16.1253 20.0833ZM7.62533 18.9167V38.4583C8.50033 38.7083 9.50033 38.8333 10.5837 38.8333H11.5003V18.5833C11.167 18.5417 10.8337 18.5 10.5837 18.5C9.50033 18.5 8.50033 18.6667 7.62533 18.9167ZM0.166992 28.6667C0.166992 31.7917 1.58366 34.5417 3.79199 36.4167V20.9583C1.58366 22.7917 0.166992 25.5833 0.166992 28.6667Z"
+                  fill="#E6E6E6"/>
+        </svg>
+        <p>No SoundCloud accounts found</p>
+        <small>Visit SoundCloud to add accounts</small>
+    </div>
+    <div class="footer">
+        <a href="https://discord.gg/BRAnAdJ46h" class="discord-link" target="_blank">
+            <img src="../assets/icon16.png" alt="Onkyo Logo" class="footer-logo"/>
+            <span class="footer-text">Powered by Onkyo</span>
+        </a>
+    </div>
+</div>
+<script type="module" src="script.js"></script>
 </body>
 </html>
