@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Onkyo SCAM",
+  "version": "1.0",
+  "description": "Manage multiple SoundCloud accounts with session tracking (special for Onkyo)",
+  "permissions": [
+    "cookies",
+    "storage",
+    "scripting",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://soundcloud.com/*",
+    "https://api-auth.soundcloud.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://soundcloud.com/*"
+      ],
+      "js": [
+        "soundcloud.js"
+      ],
+      "run_at": "document_end",
+      "type": "module"
+    }
+  ],
+  "action": {
+    "default_popup": "./popup/index.html",
+    "default_title": "SoundCloud Account Manager"
+  }
+}
