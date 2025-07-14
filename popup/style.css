@@ -22,6 +22,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    gap: 20px;
 }
 
 .header {
@@ -30,7 +31,6 @@ body {
     backdrop-filter: blur(10px);
     border-radius: 4px;
     padding: 20px;
-    margin-bottom: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
@@ -76,6 +76,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+
 }
 
 .account-item {

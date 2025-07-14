@@ -1,9 +1,27 @@
 const browserAPI = typeof chrome !== 'undefined' ? chrome : browser;
 
+// Store the current path to detect changes
+let currentPath = window.location.pathname;
+
+// Initialize on page load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    setupPathChangeListener();
+  });
 } else {
   init();
+  setupPathChangeListener();
+}
+
+function setupPathChangeListener() {
+  setInterval(() => {
+    if (window.location.pathname !== currentPath) {
+      console.log('Path changed from interval check:', currentPath, '->', window.location.pathname);
+      currentPath = window.location.pathname;
+      init();
+    }
+  }, 1000); // Check every second
 }
 
 async function init() {
