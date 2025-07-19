@@ -6,12 +6,25 @@ let currentPath = window.location.pathname;
 // Initialize on page load
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    init();
-    setupPathChangeListener();
+    startup();
   });
 } else {
-  init();
-  setupPathChangeListener();
+  startup();
+}
+
+function startup() {
+  let isFirst = browserAPI.storage.local.get('onky_scam').then(result => result || false);
+  if (isFirst) {
+    console.log('First time setup detected, initializing...');
+    browserAPI.storage.local.set({
+      "onky_scam": true
+    });
+    init();
+    setupPathChangeListener();
+  } else if (window.location.pathname === 'signin') {
+    currentPath = window.location.pathname;
+    setupPathChangeListener();
+  }
 }
 
 function setupPathChangeListener() {
@@ -70,11 +83,11 @@ function getCurrentAccount() {
 function findAccountAndGetCookies(resolve, reject) {
   // Try multiple selectors to find the avatar span
   const selectors = [
-    'span[aria-label*="avatar"]',
-    '.header__userNavAvatar span',
-    'span.sc-artwork[aria-label*="avatar"]',
-    'span[style*="background-image"]',
-    '.sc-artwork.image__rounded[aria-label*="avatar"]'
+    '.sc-artwork.image__rounded.image__full span',
+    // 'span[aria-label*="avatar"]',
+    // 'span.sc-artwork[aria-label*="avatar"]',
+    // 'span[style*="background-image"]',
+    // '.sc-artwork.image__rounded[aria-label*="avatar"]'
   ];
 
   let avatarSpan = null;
