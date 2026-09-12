@@ -1,1 +1,0 @@
-export const browserAPI = typeof chrome !== 'undefined' ? chrome : browser;

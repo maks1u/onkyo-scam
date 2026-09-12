@@ -1,12 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap');
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "TikTok Sans", sans-serif;
 }
-
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: black;
@@ -26,7 +22,6 @@ body {
 }
 
 .header {
-    /*background: #303030;*/
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
     border-radius: 4px;
@@ -81,7 +76,6 @@ body {
 
 .account-item {
     position: relative;
-    /*background: #303030;*/
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(10px);
     border-radius: 4px;
@@ -165,13 +159,11 @@ body {
 }
 
 .switch-btn {
-    /*background: #f50;*/
     background: white;
     color: black;
 }
 
 .switch-btn:hover {
-    /*background: rgba(218, 79, 0, 0);*/
     background: white;
     color: #a0a0a0;
     transform: scale(1.05);
@@ -253,14 +245,6 @@ body {
     gap: 5px;
 }
 
-.footer-logo {
-    border-radius: 50%;
-}
-
-.discord-link {
-    animation: pulseMessage 1.5s ease-in-out infinite;
-}
-
 .link {
     display: flex;
     justify-content: center;
@@ -283,9 +267,4 @@ body {
     100% {
         opacity: 1;
     }
-}
-
-.version-text {
-    text-align: right;
-    opacity: 0.5;
 }

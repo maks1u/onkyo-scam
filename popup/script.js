@@ -7,16 +7,13 @@ browserAPI.storage.onChanged.addListener((changes, area) => {
 });
 
 async function updateAccountList() {
-  const {soundcloudAccounts = []} = await browserAPI.storage.local.get('soundcloudAccounts');
+  const { soundcloudAccounts = [] } = await browserAPI.storage.local.get('soundcloudAccounts');
 
   const listContainer = document.getElementById('account-list');
   const emptyState = document.getElementById('empty-state');
   const accountCount = document.getElementById('account-count');
 
-  // Update account count
   accountCount.textContent = `${soundcloudAccounts.length} account${soundcloudAccounts.length !== 1 ? 's' : ''}`;
-
-  // Clear previous content
   listContainer.innerHTML = '';
 
   if (soundcloudAccounts.length === 0) {
@@ -27,15 +24,15 @@ async function updateAccountList() {
   emptyState.classList.remove('visible');
 
   soundcloudAccounts.forEach((account, index) => {
+    const username = account.username.replace(/[’']s avatar$/i, '');
     const accountDiv = document.createElement('div');
     accountDiv.className = 'account-item';
     accountDiv.dataset.index = index;
-    accountDiv.dataset.username = account.username;
-
+    accountDiv.dataset.username = username;
 
     const img = document.createElement('img');
     img.src = account.profilePicUrl;
-    img.alt = account.username;
+    img.alt = username;
     img.className = 'account-avatar';
     img.onerror = () => {
       img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNmMGYwZjAiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OTk5OSIgeD0iMTIiIHk9IjEyIj4KICA8cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTQtNCAxLjc5LTQgNCAxLjc5IDQgNCA0em0wIDJjLTIuNjcgMC04IDEuMzQtOCA0djJoMTZ2LTJjMC0yLjY2LTUuMzMtNC04LTR6Ii8+Cjwvc3ZnPgo8L3N2Zz4K';
@@ -46,8 +43,7 @@ async function updateAccountList() {
 
     const usernameSpan = document.createElement('div');
     usernameSpan.className = 'account-username';
-    usernameSpan.textContent = account.username;
-
+    usernameSpan.textContent = username;
 
     infoDiv.appendChild(usernameSpan);
 
@@ -56,8 +52,9 @@ async function updateAccountList() {
 
     const switchBtn = document.createElement('button');
     switchBtn.className = 'action-btn switch-btn';
-    switchBtn.innerHTML = '↻';
+    switchBtn.textContent = '↻';
     switchBtn.title = 'Switch to this account';
+    switchBtn.setAttribute('aria-label', `Switch to ${username}`);
     switchBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       switchAccount(account, index);
@@ -65,8 +62,9 @@ async function updateAccountList() {
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'action-btn remove-btn';
-    removeBtn.innerHTML = '✕';
+    removeBtn.textContent = '✕';
     removeBtn.title = 'Remove account';
+    removeBtn.setAttribute('aria-label', `Remove ${username}`);
     removeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       removeAccount(account, index);
@@ -79,7 +77,6 @@ async function updateAccountList() {
     accountDiv.appendChild(infoDiv);
     accountDiv.appendChild(actionsDiv);
 
-    // Add click event for the entire account item
     accountDiv.addEventListener('click', () => {
       switchAccount(account, index);
     });
@@ -88,99 +85,71 @@ async function updateAccountList() {
   });
 }
 
+// ─── Account Actions ──────────────────────────────────────────────────────────
+
 async function switchAccount(account, index) {
+  const accountItem = document.querySelector(`[data-index="${index}"]`);
+
   try {
-    const accountItem = document.querySelector(`[data-index="${index}"]`);
-    if (accountItem) {
-      accountItem.classList.add('loading');
+    if (accountItem) accountItem.classList.add('loading');
+
+    const currentResponse = await browserAPI.runtime.sendMessage({ method: 'getCurrentCookies' });
+    const currentCookies = currentResponse?.cookies || [currentResponse?.cookie];
+    const savedCookies = account.cookies?.length ? account.cookies : [account.cookie];
+    if (savedCookies.some(saved =>
+      currentCookies.some(current => current?.name === saved?.name && current?.value === saved?.value)
+    )) return;
+
+    const switchResponse = await browserAPI.runtime.sendMessage({ method: 'switchAccount', account });
+
+    if (!switchResponse?.success) {
+      throw new Error(switchResponse?.error ?? 'Unknown error');
     }
-
-    const accounts = await browserAPI.storage.local.get('soundcloudAccounts').then(result => result.soundcloudAccounts || []);
-    const currentAccount = accounts[index];
-
-    let currentCookie = null;
-    browserAPI.runtime.sendMessage({
-      method: 'getCurrentCookies'
-    }, (response) => {
-      if ((response && response.success) && !browserAPI.runtime.lastError) {
-        currentCookie = response.cookie.value;
-        if (currentCookie === currentAccount.cookie.value) {
-          console.log('Already on this account:', account.username);
-          if (accountItem) {
-            accountItem.classList.remove('loading');
-          }
-
-          return null;
-        }
-      }
-    });
-
-    browserAPI.runtime.sendMessage({
-      method: 'switchAccount',
-      account: account
-    }, (response) => {
-      if (accountItem) {
-        accountItem.classList.remove('loading');
-      }
-
-      if (response && response.success) {
-        console.log('Account switched successfully:', account.username);
-      } else {
-        console.error('Failed to switch account:', response?.error || 'Unknown error');
-      }
-    });
   } catch (error) {
-    console.error('Error switching account:', error);
+    console.error('Error switching account:', error.message);
+    alert(`Could not switch account: ${error.message}`);
+  } finally {
+    if (accountItem) accountItem.classList.remove('loading');
   }
 }
 
 async function removeAccount(account, index) {
   try {
-    // Show confirmation (optional)
-    if (!confirm(`Are you sure you want to remove ${account.username}?`)) {
+    if (!confirm(`Are you sure you want to remove ${account.username.replace(/[’']s avatar$/i, '')}?`)) {
       return;
     }
 
-    const {soundcloudAccounts = []} = await browserAPI.storage.local.get('soundcloudAccounts');
+    const { soundcloudAccounts = [] } = await browserAPI.storage.local.get('soundcloudAccounts');
 
     if (account.isActive) {
-      browserAPI.runtime.sendMessage({
-        method: 'clearCurrentCookies'
-      }, (response) => {
-        if (response && response.success) {
-          browserAPI.tabs.create({url: 'https://soundcloud.com/signin'});
-        }
-      });
+      const response = await browserAPI.runtime.sendMessage({ method: 'clearCurrentCookies' });
+      if (response?.success) {
+        browserAPI.tabs.create({ url: 'https://soundcloud.com/signin' });
+      }
     }
 
-    const updatedAccounts = soundcloudAccounts.filter((acc, i) => account.cookie.value !== acc.cookie.value);
-    await browserAPI.storage.local.set({soundcloudAccounts: updatedAccounts});
+    const updatedAccounts = soundcloudAccounts.filter((_, accountIndex) => accountIndex !== index);
+    await browserAPI.storage.local.set({ soundcloudAccounts: updatedAccounts });
   } catch (error) {
-    console.error('Error removing account:', error);
+    console.error('Error removing account:', error.message);
   }
 }
 
 async function addAccount() {
   try {
-    // Send message to background script to clear all cookies
-    browserAPI.runtime.sendMessage({
-      method: 'clearCurrentCookies'
-    }, (response) => {
-      if (response && response.success) {
-        console.log('All cookies cleared successfully');
-
-        // Open SoundCloud signin page in a new tab
-        browserAPI.tabs.create({url: 'https://soundcloud.com/signin'});
-      } else {
-        console.error('Failed to clear cookies:', response?.error || 'Unknown error');
-      }
-    });
+    const response = await browserAPI.runtime.sendMessage({ method: 'clearCurrentCookies' });
+    if (response?.success) {
+      browserAPI.tabs.create({ url: 'https://soundcloud.com/signin' });
+    } else {
+      console.error('Failed to clear cookies:', response?.error ?? 'Unknown error');
+    }
   } catch (error) {
-    console.error('Error adding account:', error);
+    console.error('Error adding account:', error.message);
   }
 }
 
-// Add event listener to the "Add account" button
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', () => {
   const addAccountBtn = document.getElementById('add-account-btn');
   if (addAccountBtn) {
@@ -188,53 +157,4 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Initialize the account list when the script loads
 updateAccountList();
-
-
-function findCurrentUsername() {
-  // Try multiple selectors to find the avatar span
-  const selectors = [
-    'span[aria-label*="avatar"]',
-    '.header__userNavAvatar span',
-    'span.sc-artwork[aria-label*="avatar"]',
-    'span[style*="background-image"]',
-    '.sc-artwork.image__rounded[aria-label*="avatar"]'
-  ];
-
-  let avatarSpan = null;
-
-  for (const selector of selectors) {
-    avatarSpan = document.querySelector(selector);
-    if (avatarSpan) {
-      break;
-    }
-  }
-
-  if (!avatarSpan) {
-    const allSpans = document.querySelectorAll('span');
-    for (const span of allSpans) {
-      if (span.style.backgroundImage && span.getAttribute('aria-label')?.includes('avatar')) {
-        avatarSpan = span;
-        console.log('Found avatar span by checking all spans');
-        break;
-      }
-    }
-  }
-
-  if (!avatarSpan) {
-    console.log('Avatar span not found');
-    console.log('Available spans:', document.querySelectorAll('span').length);
-
-    // Log some debug info
-    const headerNav = document.querySelector('.header__userNavAvatar');
-    if (headerNav) {
-      console.log('Header nav found:', headerNav.innerHTML);
-    }
-
-    return null;
-  }
-
-  const ariaLabel = avatarSpan.getAttribute('aria-label');
-  return ariaLabel ? ariaLabel.replace("’s avatar", "") : null;
-}
