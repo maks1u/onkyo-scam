@@ -38,8 +38,15 @@ browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
             throw error;
           }
 
-          const tabs = await browserAPI.tabs.query({url: 'https://soundcloud.com/*'});
-          await Promise.all(tabs.map(({id}) => browserAPI.tabs.reload(id)));
+          await markAccountActive(cookies);
+
+          const soundcloudTabs = await browserAPI.tabs.query({url: 'https://soundcloud.com/*'});
+          await Promise.all(soundcloudTabs.map(({id}) => browserAPI.tabs.reload(id)));
+
+          const [activeTab] = await browserAPI.tabs.query({active: true, lastFocusedWindow: true});
+          if (!isSoundCloudUrl(activeTab?.url)) {
+            await browserAPI.tabs.create({url: 'https://soundcloud.com/'});
+          }
 
           sendResponse({
             success: true,
@@ -152,6 +159,29 @@ function getCookieUrl(cookie) {
     throw new Error(`Unsupported cookie domain: ${domain}`);
   }
   return `https://${domain}${cookie.path || '/'}`;
+}
+
+function isSoundCloudUrl(url) {
+  if (!url) return false;
+
+  try {
+    const {protocol, hostname} = new URL(url);
+    return protocol === 'https:' && (hostname === 'soundcloud.com' || hostname.endsWith('.soundcloud.com'));
+  } catch {
+    return false;
+  }
+}
+
+async function markAccountActive(selectedCookies) {
+  const {soundcloudAccounts: accounts = []} = await browserAPI.storage.local.get('soundcloudAccounts');
+  const updatedAccounts = accounts.map(account => ({
+    ...account,
+    isActive: getSavedAuthCookies(account).some(saved =>
+      selectedCookies.some(selected => selected.name === saved.name && selected.value === saved.value)
+    ),
+  }));
+
+  await browserAPI.storage.local.set({soundcloudAccounts: updatedAccounts});
 }
 
 async function removeAllCookies() {

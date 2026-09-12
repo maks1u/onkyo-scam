@@ -90,11 +90,12 @@ function detectFromDOM() {
 
   const ariaLabel = avatarSpan?.getAttribute('aria-label');
   const profilePath = profileLink && new URL(profileLink.href).pathname.split('/').filter(Boolean)[0];
+  const displayName = ariaLabel?.replace(/[’']s avatar$/i, '').trim();
   const username = profilePath
     ? decodeURIComponent(profilePath)
-    : ariaLabel?.replace(/[’']s avatar$/i, '').trim();
+    : displayName;
 
   if (!username) return null;
 
-  return { username, profilePicUrl };
+  return { username, displayName: displayName || username, profilePicUrl };
 }

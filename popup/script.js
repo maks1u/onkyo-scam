@@ -25,14 +25,17 @@ async function updateAccountList() {
 
   soundcloudAccounts.forEach((account, index) => {
     const username = account.username.replace(/[’']s avatar$/i, '');
+    const displayName = (account.displayName || username).replace(/[’']s avatar$/i, '');
     const accountDiv = document.createElement('div');
-    accountDiv.className = 'account-item';
+    accountDiv.className = `account-item${account.isActive ? ' is-active' : ''}`;
     accountDiv.dataset.index = index;
     accountDiv.dataset.username = username;
+    accountDiv.setAttribute('role', 'button');
+    accountDiv.setAttribute('tabindex', '0');
 
     const img = document.createElement('img');
     img.src = account.profilePicUrl;
-    img.alt = username;
+    img.alt = displayName;
     img.className = 'account-avatar';
     img.onerror = () => {
       img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNmMGYwZjAiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OTk5OSIgeD0iMTIiIHk9IjEyIj4KICA8cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTQtNCAxLjc5LTQgNCAxLjc5IDQgNCA0em0wIDJjLTIuNjcgMC04IDEuMzQtOCA0djJoMTZ2LTJjMC0yLjY2LTUuMzMtNC04LTR6Ii8+Cjwvc3ZnPgo8L3N2Zz4K';
@@ -43,7 +46,7 @@ async function updateAccountList() {
 
     const usernameSpan = document.createElement('div');
     usernameSpan.className = 'account-username';
-    usernameSpan.textContent = username;
+    usernameSpan.textContent = displayName;
 
     infoDiv.appendChild(usernameSpan);
 
@@ -54,7 +57,7 @@ async function updateAccountList() {
     switchBtn.className = 'action-btn switch-btn';
     switchBtn.textContent = '↻';
     switchBtn.title = 'Switch to this account';
-    switchBtn.setAttribute('aria-label', `Switch to ${username}`);
+    switchBtn.setAttribute('aria-label', `Switch to ${displayName}`);
     switchBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       switchAccount(account, index);
@@ -64,7 +67,7 @@ async function updateAccountList() {
     removeBtn.className = 'action-btn remove-btn';
     removeBtn.textContent = '✕';
     removeBtn.title = 'Remove account';
-    removeBtn.setAttribute('aria-label', `Remove ${username}`);
+    removeBtn.setAttribute('aria-label', `Remove ${displayName}`);
     removeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       removeAccount(account, index);
@@ -80,6 +83,12 @@ async function updateAccountList() {
     accountDiv.addEventListener('click', () => {
       switchAccount(account, index);
     });
+    accountDiv.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        switchAccount(account, index);
+      }
+    });
 
     listContainer.appendChild(accountDiv);
   });
@@ -92,13 +101,6 @@ async function switchAccount(account, index) {
 
   try {
     if (accountItem) accountItem.classList.add('loading');
-
-    const currentResponse = await browserAPI.runtime.sendMessage({ method: 'getCurrentCookies' });
-    const currentCookies = currentResponse?.cookies || [currentResponse?.cookie];
-    const savedCookies = account.cookies?.length ? account.cookies : [account.cookie];
-    if (savedCookies.some(saved =>
-      currentCookies.some(current => current?.name === saved?.name && current?.value === saved?.value)
-    )) return;
 
     const switchResponse = await browserAPI.runtime.sendMessage({ method: 'switchAccount', account });
 
@@ -115,7 +117,7 @@ async function switchAccount(account, index) {
 
 async function removeAccount(account, index) {
   try {
-    if (!confirm(`Are you sure you want to remove ${account.username.replace(/[’']s avatar$/i, '')}?`)) {
+    if (!confirm(`Are you sure you want to remove ${(account.displayName || account.username).replace(/[’']s avatar$/i, '')}?`)) {
       return;
     }
 
