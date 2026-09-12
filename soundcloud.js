@@ -1,153 +1,101 @@
 const browserAPI = typeof chrome !== 'undefined' ? chrome : browser;
 
-// Store the current path to detect changes
 let currentPath = window.location.pathname;
 
-// Initialize on page load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    startup();
-  });
+  document.addEventListener('DOMContentLoaded', () => startup());
 } else {
   startup();
 }
 
-function startup() {
-  let isFirst = browserAPI.storage.local.get('onky_scam').then(result => result || false);
-  if (isFirst) {
-    console.log('First time setup detected, initializing...');
-    browserAPI.storage.local.set({
-      "onky_scam": true
-    });
-    init();
-    setupPathChangeListener();
-  } else if (window.location.pathname === 'signin') {
-    currentPath = window.location.pathname;
-    setupPathChangeListener();
-  }
+async function startup() {
+  await init();
+  setupPathChangeListener();
 }
 
 function setupPathChangeListener() {
   setInterval(() => {
     if (window.location.pathname !== currentPath) {
-      console.log('Path changed from interval check:', currentPath, '->', window.location.pathname);
       currentPath = window.location.pathname;
       init();
     }
-  }, 1000); // Check every second
+  }, 1000);
 }
 
 async function init() {
-  let accounts = await browserAPI.storage.local.get('soundcloudAccounts').then(result => result.soundcloudAccounts || []);
+  const { soundcloudAccounts: accounts = [] } = await browserAPI.storage.local.get('soundcloudAccounts');
 
-  const currentAccount = await getCurrentAccount();
-  let found = accounts.some(account => account.username === currentAccount.username);
+  const currentAccount = await detectCurrentAccount();
+  if (!currentAccount) return;
 
-  if (found) {
-    accounts = accounts.map(account =>
-      account.username === currentAccount.username
-        ? {...account, isActive: true}
-        : {...account, isActive: false}
+  const currentCookieValues = new Set(currentAccount.cookies.map(({value}) => value));
+  const existingIndex = accounts.findIndex(account =>
+    account.username === currentAccount.username ||
+    [account.cookie, ...(account.cookies || [])].some(cookie => currentCookieValues.has(cookie?.value))
+  );
+
+  let updated;
+  if (existingIndex !== -1) {
+    updated = accounts.map((account, index) =>
+      index === existingIndex
+        ? { ...account, ...currentAccount, isActive: true }
+        : { ...account, isActive: false }
     );
   } else {
-    accounts = accounts.map(account => ({...account, isActive: false}));
-    accounts.push({
-      ...currentAccount,
-      isActive: true
-    });
+    updated = [
+      ...accounts.map(a => ({ ...a, isActive: false })),
+      { ...currentAccount, isActive: true },
+    ];
   }
 
-  await browserAPI.storage.local.set({
-    soundcloudAccounts: accounts
-  }, () => {
-    console.log('SoundCloud accounts updated:', accounts);
-  });
+  await browserAPI.storage.local.set({ soundcloudAccounts: updated });
 }
 
-function getCurrentAccount() {
-  return new Promise((resolve, reject) => {
-    // Wait for the page to be fully loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        findAccountAndGetCookies(resolve, reject);
-      });
-    } else {
-      // Add a small delay to ensure dynamic content is loaded
-      setTimeout(() => {
-        findAccountAndGetCookies(resolve, reject);
-      }, 1000);
-    }
-  });
+// ─── Account Identity Resolution ─────────────────────────────────────────────
+
+async function detectCurrentAccount() {
+  let identity;
+  for (let attempt = 0; attempt < 10 && !identity; attempt++) {
+    identity = detectFromDOM();
+    if (!identity) await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  if (!identity) return null;
+
+  const response = await browserAPI.runtime.sendMessage({ method: 'getCurrentCookies' });
+  if (!response?.success) return null;
+
+  return {
+    ...identity,
+    cookie: response.cookie,
+    cookies: response.cookies || [response.cookie],
+  };
 }
 
-function findAccountAndGetCookies(resolve, reject) {
-  // Try multiple selectors to find the avatar span
-  const selectors = [
-    '.sc-artwork.image__rounded.image__full span',
-    // 'span[aria-label*="avatar"]',
-    // 'span.sc-artwork[aria-label*="avatar"]',
-    // 'span[style*="background-image"]',
-    // '.sc-artwork.image__rounded[aria-label*="avatar"]'
-  ];
+function detectFromDOM() {
+  const profileLink = document.querySelector(
+    '.header__userNavUsernameButton[href], .header__userNavAvatar[href]'
+  );
+  const avatarSpan = document.querySelector([
+    '.header__userNavAvatar span[aria-label*="avatar"]',
+    '.header__userNavAvatar[aria-label*="avatar"]',
+    '.header__userNavAvatar img',
+    'header span[aria-label*="avatar"]',
+  ].join(','));
 
-  let avatarSpan = null;
+  if (!avatarSpan && !profileLink) return null;
 
-  for (const selector of selectors) {
-    avatarSpan = document.querySelector(selector);
-    if (avatarSpan) {
-      break;
-    }
-  }
+  const bgImage = avatarSpan?.style.backgroundImage || '';
+  const urlMatch = bgImage.match(/url\(["']?([^"')]+)["']?\)/);
+  const profilePicUrl = avatarSpan?.src || (urlMatch ? urlMatch[1] : null);
 
-  if (!avatarSpan) {
-    const allSpans = document.querySelectorAll('span');
-    for (const span of allSpans) {
-      if (span.style.backgroundImage && span.getAttribute('aria-label')?.includes('avatar')) {
-        avatarSpan = span;
-        console.log('Found avatar span by checking all spans');
-        break;
-      }
-    }
-  }
+  const ariaLabel = avatarSpan?.getAttribute('aria-label');
+  const profilePath = profileLink && new URL(profileLink.href).pathname.split('/').filter(Boolean)[0];
+  const displayName = ariaLabel?.replace(/[’']s avatar$/i, '').trim();
+  const username = profilePath
+    ? decodeURIComponent(profilePath)
+    : displayName;
 
-  if (!avatarSpan) {
-    console.log('Avatar span not found');
-    console.log('Available spans:', document.querySelectorAll('span').length);
+  if (!username) return null;
 
-    // Log some debug info
-    const headerNav = document.querySelector('.header__userNavAvatar');
-    if (headerNav) {
-      console.log('Header nav found:', headerNav.innerHTML);
-    }
-
-    return null;
-  }
-
-  const backgroundImage = avatarSpan.style.backgroundImage;
-  const urlMatch = backgroundImage.match(/url\(["']?([^"')]+)["']?\)/);
-  const profilePicUrl = urlMatch ? urlMatch[1] : null;
-
-  const ariaLabel = avatarSpan.getAttribute('aria-label');
-  const username = ariaLabel ? ariaLabel.replace("’s avatar", "") : null;
-
-  if (!profilePicUrl || !username) {
-    console.log('Could not extract profile picture URL or username');
-    console.log('Profile pic URL:', profilePicUrl);
-    console.log('Username:', username);
-    return null;
-  }
-
-  browserAPI.runtime.sendMessage({
-    method: 'getCurrentCookies'
-  }, (response) => {
-    if ((response && response.success) && !browserAPI.runtime.lastError) {
-      resolve({
-        profilePicUrl: profilePicUrl,
-        username: username,
-        cookie: response.cookie
-      });
-    } else {
-      return null;
-    }
-  });
+  return { username, displayName: displayName || username, profilePicUrl };
 }
